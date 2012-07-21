@@ -3,7 +3,7 @@
 
 DBNAME=Namazu/NMZ.db
 
-test -f $DBNAME && rm -f NMZ.db*
+test -f $DBNAME && rm -f Namazu/NMZ.db*
 
 groonga -n $DBNAME < /dev/null
 
@@ -21,6 +21,7 @@ groonga $DBNAME column_create --table Fields --name to --flags COLUMN_SCALAR --t
 groonga $DBNAME column_create --table Fields --name url --flags COLUMN_SCALAR --type ShortText
 groonga $DBNAME column_create --table Fields --name body --flags COLUMN_SCALAR --type Text
 
-groonga $DBNAME column_create --table Index --name body_index \
+groonga $DBNAME column_create --table Index --name body \
     --flags COLUMN_INDEX\|WITH_SECTION\|WITH_POSITION --type Fields \
-    --source body,from,message_id,subject,to,url
+    --source body
+#    --source body,from,message_id,subject,to,url
