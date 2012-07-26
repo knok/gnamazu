@@ -11,6 +11,11 @@ use IO::File;
 use Email::MIME;
 use DateTime::Format::Mail;
 
+sub escapedq {
+  my ($r) = @_;
+  $r =~ s/"/\\"/g;
+}
+
 my $dbname = shift @ARGV;
 die "no dbname" unless $dbname;
 my $filename = shift @ARGV;
@@ -24,14 +29,14 @@ close($fh);
 $text = Encode::decode("Guess", $text);
 my $email = Email::MIME->new($text);
 my $header = $email->{'header'};
-my $key = $filename;
+my $key = escapedq($filename);
 my $date = $header->header('date');
-my $from = $header->header('from');
-my $to = $header->header('to');
-my $subject = $header->header('subject');
+my $from = escapedq($header->header('from'));
+my $to = escapedq($header->header('to'));
+my $subject = escapedq($header->header('subject'));
 my $newsgroups = "";
-my $message_id = $header->header('message-id');
-my $body = $email->body;
+my $message_id = escapedq($header->header('message-id'));
+my $body = escapedq($email->body);
 
 #$date =~ s/^(.*[-+][0-9][0-9][0-9][0-9]).*$/$1/;
 my $dtm = DateTime::Format::Mail->new(loose => 1);
@@ -54,4 +59,6 @@ open($fh, "|groonga $dbname");
 binmode($fh, ":utf8");
 print $fh $json;
 close($fh);
+
+exit 0;
 
