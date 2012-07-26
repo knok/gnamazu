@@ -9,6 +9,7 @@ use Encode::Guess qw/7bit-jis euc-jp shiftjis utf8/;
 use Data::Dumper;
 use IO::File;
 use Email::MIME;
+use DateTime::Format::Mail;
 
 my $dbname = shift @ARGV;
 die "no dbname" unless $dbname;
@@ -32,6 +33,25 @@ my $newsgroups = "";
 my $message_id = $header->header('message-id');
 my $body = $email->body;
 
-foreach my $k ($key, $date, $from, $to, $subject, $message_id, $body) {
-  print $k . "\n";
-}
+#$date =~ s/^(.*[-+][0-9][0-9][0-9][0-9]).*$/$1/;
+my $dtm = DateTime::Format::Mail->new(loose => 1);
+my $dt = $dtm->parse_datetime($date);
+$date = $dt->epoch;
+
+# call groonga command to append info.
+my $json = <<"EOF";
+load --table Fields
+[
+{"_key": "$key", "date": "$date", "from": "$from",
+"to": "$to", "subject": "$subject", "newsgroups": "",
+"message_id": "$message_id", "body": "$body" },
+]
+EOF
+
+print $date, "\n";
+
+open($fh, "|groonga $dbname");
+binmode($fh, ":utf8");
+print $fh $json;
+close($fh);
+
