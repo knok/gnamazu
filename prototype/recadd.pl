@@ -7,6 +7,7 @@ use warnings;
 use IO::Handle;
 use Encode::Guess qw/7bit-jis euc-jp shiftjis utf8/;
 use File::Find;
+use Data::Dumper;
 
 package Namazu::Mail;
 
@@ -50,6 +51,8 @@ sub escapedq {
 
 package Namazu::RecDir;
 
+my $aryref;
+
 sub new {
   my $class = shift @_;
   my $this = bless {}, $class;
@@ -59,16 +62,22 @@ sub new {
 sub finddir {
   my $this = shift @_;
   my $dir = shift @_;
-  my $aryref = [];
+  undef $aryref;
+  $aryref = [];
 
-  finddepth( {wanted => append($aryref), no_chdir => 1}, $dir );
+  File::Find::finddepth( {wanted => \&append, no_chdir => 1}, $dir );
   $this->{files} = $aryref;
 }
 
 sub append {
-  my ($aryref) = @_;
   if (-f $_) {
     push @$aryref, $_;
   }
 }
+
+package main;
+
+my $x = Namazu::RecDir->new();
+$x->finddir("/home/knok/Mail");
+print Dumper($x);
 
