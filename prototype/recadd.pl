@@ -59,7 +59,7 @@ sub readfile {
   if ((ref $decoder) =~ /^Encode/) {
     $text = $decoder->decode($text);
   }
-  my $email = $this->{email} = Email::MIME->new($text);
+  my $email = Email::MIME->new($text);
   my $header = $this->{header} = $email->{header};
   $this->{url} = $this->{key} = escapedq($filename);
   if ($header->header('date')) {
@@ -128,6 +128,28 @@ sub append {
   }
 }
 
+package Namazu::Register;
+
+sub new {
+  my $class = shift @_;
+  my $this = bless {}, $class;
+  $this->{db} = shift @_;
+  return $this;
+}
+
+sub register {
+  my $this = shift @_;
+  my $mail = shift @_;
+  my $json = $mail->tojson;
+  print STDOUT <<"EOF";
+groonga $this->{db}
+load --table Fields
+[
+$json
+]
+EOF
+}
+
 package main;
 
 my $x = Namazu::FindDir->new();
@@ -139,4 +161,5 @@ for (my $i = 0; $i <= $x->{counts}; $i ++) {
   push @ary, $z if defined $z;
 }
 
-print $ary[0]->tojson;
+my $reg = Namazu::Register->new("../Namazu/NMZ.db");
+$reg->register($ary[0]);
