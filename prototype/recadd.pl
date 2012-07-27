@@ -67,6 +67,7 @@ sub finddir {
 
   File::Find::finddepth( {wanted => \&append, no_chdir => 1}, $dir );
   $this->{files} = $aryref;
+  $this->{counts} = $#{$aryref};
 }
 
 sub append {
@@ -79,5 +80,6 @@ package main;
 
 my $x = Namazu::RecDir->new();
 $x->finddir("/home/knok/Mail");
+
 print Dumper($x);
 
