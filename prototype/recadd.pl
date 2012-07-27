@@ -10,6 +10,7 @@ use File::Find;
 use Data::Dumper;
 use File::MMagic;
 use Email::MIME;
+use DateTime::Format::Mail;
 
 package Namazu::Magic;
 
@@ -31,6 +32,8 @@ sub getmail {
 }
 
 package Namazu::Mail;
+
+my $fmt = DateTime::Format::Mail->new(loose => 1);
 
 sub new {
   my $class = shift @_;
@@ -57,9 +60,11 @@ sub readfile {
     $text = $decoder->decode($text);
   }
   my $email = $this->{email} = Email::MIME->new($text);
-  my $header = $this->{header} = $email->{'header'};
-  $this->{key} = escapedq($filename);
-  $this->{date} = $header->header('date');
+  my $header = $this->{header} = $email->{header};
+  $this->{url} = $this->{key} = escapedq($filename);
+  if ($header->header('date')) {
+    $this->{date} = $fmt->parse_datetime($header->header('date'))->epoch;
+  }
   $this->{from} = escapedq($header->header('from'));
   $this->{to} = escapedq($header->header('to'));
   $this->{subject} = escapedq($header->header('subject'));
@@ -71,13 +76,32 @@ sub readfile {
   return;
 }
 
-sub escapedq {
-  my ($r) = @_;
-  return "" unless $r;
-  $r =~ s/"/\\"/g;
+sub tojson {
+  my $this = shift @_;
+  my $json = <<"EOF";
+    {
+        "_key": "$this->{key}",
+        "body": "$this->{body}",
+        "date": "$this->{date}",
+        "from": "$this->{from}",
+        "message_id": "$this->{message_id}",
+        "newsgroups": "",
+        "subject": "$this->{subject}",
+        "to": "$this->{to}",
+        "url": "$this->{url}"
+    }
+EOF
+  return $json;
 }
 
-package Namazu::RecDir;
+sub escapedq {
+  my $r = shift @_;
+  return "" unless defined $r;
+  $r =~ s/"/\\"/g;
+  return $r;
+}
+
+package Namazu::FindDir;
 
 my $aryref;
 
@@ -106,7 +130,7 @@ sub append {
 
 package main;
 
-my $x = Namazu::RecDir->new();
+my $x = Namazu::FindDir->new();
 $x->finddir("/home/knok/Mail");
 
 my @ary;
@@ -115,4 +139,4 @@ for (my $i = 0; $i <= $x->{counts}; $i ++) {
   push @ary, $z if defined $z;
 }
 
-print Dumper($ary[0]);
+print $ary[0]->tojson;
