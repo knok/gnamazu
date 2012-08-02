@@ -141,13 +141,16 @@ sub register {
   my $this = shift @_;
   my $mail = shift @_;
   my $json = $mail->tojson;
-  print STDOUT <<"EOF";
-groonga $this->{db}
+  my $fh = IO::Handle->new();
+  open($fh, "|-", "groonga", $this->{db});
+  binmode($fh, ":utf8");
+  print $fh <<"EOF";
 load --table Fields
 [
 $json
 ]
 EOF
+  $fh->close();
 }
 
 package main;
@@ -155,11 +158,12 @@ package main;
 my $x = Namazu::FindDir->new();
 $x->finddir("/home/knok/Mail");
 
+my $reg = Namazu::Register->new("../Namazu/NMZ.db");
 my @ary;
 for (my $i = 0; $i <= $x->{counts}; $i ++) {
   my $z = Namazu::Magic::getmail($x->{files}->[$i]);
-  push @ary, $z if defined $z;
+  if (defined $z) {
+    push @ary, $z;
+    $reg->register($z);
+  }
 }
-
-my $reg = Namazu::Register->new("../Namazu/NMZ.db");
-$reg->register($ary[0]);
